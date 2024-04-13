@@ -5,14 +5,18 @@ const net = require('net');
 
 const { utils: { parseKey }, Server } = require('ssh2');
 
-const  http = require('http');
+const https = require('https');
 const httpProxy = require('http-proxy');
 
 const proxy = httpProxy.createProxyServer({});
 
-const server = http.createServer(function(req, res) {
+const server = https.createServer({
+        key: readFileSync('/etc/letsencrypt/live/tunnel.skyfortress.dev/privkey.pem'),
+        cert: readFileSync('/etc/letsencrypt/live/tunnel.skyfortress.dev/fullchain.pem')
+    },
+    function(req, res) {
     console.log('Request received', req.headers);
-    if (req.headers.host === 'mytest.com') {
+    if (req.headers.host === 'abc.tunnel.skyfortress.dev') {
         proxy.web(req, res, { target: 'http://127.0.0.1:8082' });
     } else {
         res.writeHead(200, { 'Content-Type': 'text/plain' });
@@ -20,8 +24,8 @@ const server = http.createServer(function(req, res) {
     }
 });
 
-console.log("listening on port 81")
-server.listen(81);
+console.log("listening on port 443")
+server.listen(443);
 
 new Server({
   hostKeys: [readFileSync('ssh_host_rsa_key')]
@@ -68,7 +72,7 @@ new Server({
       session.once('shell', (accept, reject, info) => {
         console.log('Client wants to allocate a shell', inspect(info));
         const session = accept();
-        session.write('Your address is ...!\r\n');
+        session.write('Your address is abc.tunnel.skyfortress.dev!\r\n');
 
         session.on('data', (data) => {
             session.end();
