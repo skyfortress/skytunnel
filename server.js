@@ -82,6 +82,6 @@ new Server({
   }).on('close', () => {
     console.log('Client disconnected');
   });
-}).listen(8080, '127.0.0.1', function() {
+}).listen(8080, '0.0.0.0', function() {
   console.log('Listening on port ' + this.address().port);
 });
