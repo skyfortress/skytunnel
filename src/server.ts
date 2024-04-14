@@ -1,20 +1,29 @@
 import 'dotenv/config';
 
 import { readFileSync } from 'fs';
-import net from 'net';
 import { Server } from 'ssh2';
 import { inspect } from 'util';
 
+import { generateDomainFromConnection } from './lib/domain';
+import { createTcpServer } from './lib/tcp';
 import { startHttpsServer } from './lib/web';
 
-startHttpsServer();
+const connectedClients = {};
+let currentPort = 1000;
+const getProxyPort = () => {
+  currentPort += 1;
+  return currentPort;
+};
+
+startHttpsServer(connectedClients);
 
 new Server(
   {
     hostKeys: [readFileSync(process.env.SSH_HOST_KEY)],
   },
   (client) => {
-    console.log('Client connected!');
+    console.log('Client connected!', (client as any)._sock._peername.address);
+    let domain;
 
     client
       .on('authentication', (ctx) => {
@@ -24,32 +33,23 @@ new Server(
         console.log('Client authenticated!');
 
         client.on('request', (accept, reject, name, info) => {
+          console.log('Client wants to execute: ' + name, inspect(info));
           if (name === 'tcpip-forward') {
             accept();
-            console.log('Client wants to execute: ' + inspect(info));
+            if (info.bindPort === 443) {
+              const port = getProxyPort();
+              const tcpHost = '127.0.0.1';
+              const tcpServer = createTcpServer(client, info);
+              const domain = generateDomainFromConnection(client);
 
-            const server = net.createServer(function (socket) {
-              console.log('Client connected to forwarded port');
-              // Get the remote address and port of the connected client
-              console.log('Remote address: ' + socket.remoteAddress + ':' + socket.remotePort);
-              client.forwardOut(
-                info.bindAddr,
-                info.bindPort,
-                socket.remoteAddress,
-                socket.remotePort,
-                (err, remoteSocket) => {
-                  if (err) {
-                    console.log('FIRST :: forwardOut error: ' + err);
-                    return client.end();
-                  }
+              connectedClients[domain] = {
+                port,
+                server: tcpServer,
+              };
 
-                  remoteSocket.pipe(socket);
-                  socket.pipe(remoteSocket);
-                },
-              );
-            });
-            console.log('TCP listening to: ' + info.bindAddr + ':' + info.bindPort);
-            server.listen(info.bindPort, '127.0.0.1');
+              tcpServer.listen(port, tcpHost);
+              console.log(`TCP listening to: ${tcpHost}:${port}`);
+            }
           }
         });
         client.on('session', (accept, reject) => {
@@ -62,7 +62,7 @@ new Server(
           session.once('shell', (accept, reject, info) => {
             console.log('Client wants to allocate a shell', inspect(info));
             const session = accept();
-            session.write('Your address is abc.tunnel.skyfortress.dev!\r\n');
+            session.write(`Your address is ${generateDomainFromConnection(client)}!\r\n`);
 
             session.on('data', (data) => {
               session.end();

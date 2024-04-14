@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs';
 import httpProxy from 'http-proxy';
 import https from 'https';
 
-export function startHttpsServer() {
+export function startHttpsServer(connectedClients: any) {
+  //TODO: Fix any type
   const proxy = httpProxy.createProxyServer({});
 
   const server = https.createServer(
@@ -13,8 +14,11 @@ export function startHttpsServer() {
     },
     function (req, res) {
       console.log('Request received', req.headers);
-      if (req.headers.host === 'abc.tunnel.skyfortress.dev') {
-        proxy.web(req, res, { target: 'http://127.0.0.1:8082' });
+      const connectedClient = connectedClients[req.headers.host];
+      if (connectedClient) {
+        const proxyTarget = `http://127.0.0.1:${connectedClient.port}`;
+        console.log('Proxying request to', proxyTarget);
+        proxy.web(req, res, { target: proxyTarget });
       } else {
         res.writeHead(200, { 'Content-Type': 'text/plain' });
         res.end('Not Found');
