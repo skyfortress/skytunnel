@@ -5,15 +5,10 @@ import { Server } from 'ssh2';
 import { inspect } from 'util';
 
 import { generateDomainFromConnection } from './lib/domain';
-import { createTcpServer } from './lib/tcp';
+import { createTcpServer, getRandomPort } from './lib/tcp';
 import { startHttpsServer } from './lib/web';
 
 const connectedClients = {};
-let currentPort = 1000;
-const getProxyPort = () => {
-  currentPort += 1;
-  return currentPort;
-};
 
 startHttpsServer(connectedClients);
 
@@ -23,7 +18,6 @@ new Server(
   },
   (client) => {
     console.log('Client connected!', (client as any)._sock._peername.address);
-    let domain;
 
     client
       .on('authentication', (ctx) => {
@@ -31,13 +25,15 @@ new Server(
       })
       .on('ready', () => {
         console.log('Client authenticated!');
+        let isForwarded = false;
 
         client.on('request', (accept, reject, name, info) => {
           console.log('Client wants to execute: ' + name, inspect(info));
           if (name === 'tcpip-forward') {
             accept();
+            isForwarded = true;
             if (info.bindPort === 443) {
-              const port = getProxyPort();
+              const port = getRandomPort();
               const tcpHost = '127.0.0.1';
               const tcpServer = createTcpServer(client, info);
               const domain = generateDomainFromConnection(client);
@@ -54,21 +50,28 @@ new Server(
         });
         client.on('session', (accept, reject) => {
           console.log('Client wants to start a session');
+          if (!isForwarded) {
+            console.log('Client is not using port forwarding, rejecting session');
+            return reject();
+          }
           const session = accept();
           session.once('pty', (accept, reject, info) => {
             console.log('Client wants to allocate a pseudo-TTY', inspect(info));
-            const stream = accept();
+            accept();
           });
           session.once('shell', (accept, reject, info) => {
             console.log('Client wants to allocate a shell', inspect(info));
             const session = accept();
             session.write(`Your address is ${generateDomainFromConnection(client)}!\r\n`);
 
-            session.on('data', (data) => {
+            session.on('data', () => {
               session.end();
             });
           });
         });
+      })
+      .on('error', (err) => {
+        console.error(err);
       })
       .on('close', () => {
         console.log('Client disconnected');
