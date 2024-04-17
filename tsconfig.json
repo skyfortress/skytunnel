@@ -1,4 +1,5 @@
 {
+  "exclude": ["frontend"],
     "compilerOptions": {
       "strict": false,
       "moduleResolution": "node",

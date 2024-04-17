@@ -9,7 +9,7 @@ import { WORDS_LIST } from './misc/words';
 export function generateDomainFromConnection(connection: Connection) {
   const ip = (connection as any)._sock._peername.address;
   const word = generateWordFromIP(ip);
-  return `${word}.tunnel.skyfortress.dev`; // TODO: Use a proper domain
+  return `${word}.skytunnel.run`; // TODO: Use a proper domain
 }
 
 export function generateWordFromIP(ipAddress: string) {

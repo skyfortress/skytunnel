@@ -17,6 +17,7 @@
     "ssh2": "^1.15.0"
   },
   "devDependencies": {
+    "@types/express": "^4.17.21",
     "@types/http-proxy": "^1.17.14",
     "@types/node": "^20.12.7",
     "@types/ssh2": "^1.15.0",

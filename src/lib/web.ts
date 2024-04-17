@@ -1,19 +1,35 @@
 import { readFileSync } from 'node:fs';
+import path from 'node:path';
 
+import express from 'express';
 import httpProxy from 'http-proxy';
 import https from 'https';
 
 export function startHttpsServer(connectedClients: any) {
   //TODO: Fix any type
   const proxy = httpProxy.createProxyServer({ ws: true });
+  const app = express();
+  app.use(express.static(path.join(__dirname, '../../public')));
+  app.get('/', (req, res) => {
+    res.sendFile('index.html');
+  });
+
+  const privateKey = readFileSync('/etc/letsencrypt/live/skytunnel.run/privkey.pem', 'utf8');
+  const certificate = readFileSync('/etc/letsencrypt/live/skytunnel.run/cert.pem', 'utf8');
+  const ca = readFileSync('/etc/letsencrypt/live/skytunnel.run/fullchain.pem', 'utf8');
 
   const server = https.createServer(
     {
-      key: readFileSync('/etc/letsencrypt/live/tunnel.skyfortress.dev/privkey.pem'), //TODO: use env vars
-      cert: readFileSync('/etc/letsencrypt/live/tunnel.skyfortress.dev/fullchain.pem'),
+      key: privateKey,
+      cert: certificate,
+      ca: ca,
     },
     function (req, res) {
+      if (req.headers.host === 'skytunnel.run') {
+        return app(req, res);
+      }
       console.log('Request received', req.headers);
+
       const connectedClient = connectedClients[req.headers.host];
       if (connectedClient) {
         const proxyTarget = `http://127.0.0.1:${connectedClient.port}`;
