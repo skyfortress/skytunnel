@@ -38,6 +38,7 @@ jobs:
         run: |
           scp -r -P 21 ./artifact.zip ubuntu@${{ vars.SSH_HOST }}:skytunnel-${{inputs.environment}}.zip
           ssh ubuntu@${{ vars.SSH_HOST }} -p 21 << EOF
+            source ~/.bashrc
             mkdir -p ~/skytunnel-${{inputs.environment}}
             cd ~/skytunnel-${{inputs.environment}}
             echo "${{ vars.ENV_FILE }}" > .env
