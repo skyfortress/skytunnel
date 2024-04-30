@@ -36,7 +36,7 @@ jobs:
         run: zip -q -r artifact.zip ./* 
       - name: Deploy to remote server
         run: |
-          scp -r ./artifact.zip ubuntu@${{ vars.SSH_HOST }}:skytunnel-${{inputs.environment}}.zip -P 21
+          scp -r -P 21 ./artifact.zip ubuntu@${{ vars.SSH_HOST }}:skytunnel-${{inputs.environment}}.zip
           ssh ubuntu@${{ vars.SSH_HOST }} -p 21 << EOF
             mkdir -p ~/skytunnel-${{inputs.environment}}
             cd ~/skytunnel-${{inputs.environment}}
