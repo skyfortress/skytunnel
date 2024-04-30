@@ -1,0 +1,13 @@
+name: Deploy to production
+
+on:
+  push:
+    branches:
+      - master
+  
+jobs:
+  deploy:
+    uses: ./.github/workflows/deploy.yaml
+    with:
+      environment: production
+    secrets: inherit

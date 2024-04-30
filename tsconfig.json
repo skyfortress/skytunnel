@@ -11,7 +11,7 @@
       "typeRoots": [
         "node_modules/@types"
       ],
-      "outDir": "build",
+      "outDir": "dist",
       "target": "es5"
     }
   }
