@@ -1,20 +1,21 @@
 import 'dotenv/config';
 
-import { readFileSync } from 'fs';
+import { readFileSync } from 'node:fs';
+import { inspect } from 'node:util';
+
 import { Server } from 'ssh2';
-import { inspect } from 'util';
 
 import { generateDomainFromConnection } from './lib/domain';
 import { createTcpServer, getRandomPort } from './lib/tcp';
-import { startHttpsServer } from './lib/web';
+import { startHttpServer } from './lib/web';
 
 const connectedClients = {};
 
-startHttpsServer(connectedClients);
+startHttpServer(connectedClients);
 
 new Server(
   {
-    hostKeys: [readFileSync(process.env.SSH_HOST_KEY)],
+    hostKeys: [process.env.SSH_HOST_KEY],
   },
   (client) => {
     console.log('Client connected!', (client as any)._sock._peername.address);

@@ -1,47 +1,45 @@
-name: Deploy to remote server
-run-name: Deploy Branch ${{ github.ref_name || 'manual' }} to ${{ github.event.inputs.environment }}
+name: Publish Docker image
 
 on:
-  workflow_call:
-    inputs:
-      environment:
-        required: true
-        type: string
+  workflow_dispatch:
+  push:
+    branches: [master]
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest 
-    environment: ${{ inputs.environment }}
+  push_to_registry:
+    name: Push Docker image to Docker Hub
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+      attestations: write
+      id-token: write
     steps:
-      - name: Checkout code
+      - name: Check out the repo
         uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
         with:
-          node-version: 20
-          cache: 'yarn'
-      - name: Install ssh keys
-        run: |
-          install -m 600 -D /dev/null ~/.ssh/id_rsa
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          ssh-keyscan -p 21 -H ${{ vars.SSH_HOST }} > ~/.ssh/known_hosts
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-      - name: Build
-        run: yarn run build
-      - name: Install prod deps
-        run: |
-          rm -rf ./node_modules
-          yarn install --production --frozen-lockfile
-      - name: Zip files
-        run: zip -q -r artifact.zip ./* 
-      - name: Deploy to remote server
-        run: |
-          scp -r -P 21 ./artifact.zip ubuntu@${{ vars.SSH_HOST }}:skytunnel-${{inputs.environment}}.zip
-          ssh ubuntu@${{ vars.SSH_HOST }} -p 21 << EOF
-            mkdir -p ~/skytunnel-${{inputs.environment}}
-            cd ~/skytunnel-${{inputs.environment}}
-            echo "${{ vars.ENV_FILE }}" > .env
-            unzip -q -o ../skytunnel-${{inputs.environment}}.zip 
-            rm ../skytunnel-${{inputs.environment}}.zip
-            pm2 restart pm2.config.json
-          EOF
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: skyfortress/skytunnel
+          tags: |
+            type=sha
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=raw,value=latest
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

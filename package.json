@@ -6,6 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon build/server.js",
+    "dev": "ts-node-dev --respawn --exit-child --transpile-only src/index.ts",
     "build": "tsc"
   },
   "author": "",
@@ -31,6 +32,8 @@
     "eslint-plugin-simple-import-sort": "^12.1.0",
     "nodemon": "^3.1.0",
     "prettier": "^3.2.5",
+    "ts-node-dev": "^2.0.0",
     "typescript": "^5.4.5"
-  }
+  },
+  "packageManager": "yarn@1.22.19+sha1.4ba7fc5c6e704fce2066ecbfb0b0d8976fe62447"
 }
