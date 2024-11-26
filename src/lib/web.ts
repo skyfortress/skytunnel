@@ -18,7 +18,7 @@ export function startHttpServer(connectedClients: any) {
       return app(req, res);
     }
     console.log('Request received', req.headers);
-
+    console.log(connectedClients);
     const connectedClient = connectedClients[req.headers.host];
     if (connectedClient) {
       const proxyTarget = `http://127.0.0.1:${connectedClient.port}`;
