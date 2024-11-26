@@ -26,4 +26,4 @@ WORKDIR /usr/src/web
 COPY --from=builder /usr/src/web/dist ./dist
 COPY --from=dependencies /usr/src/web/node_modules ./node_modules
 
-CMD ["node", "dist/server.js"]
+CMD ["node", "dist/index.js"]

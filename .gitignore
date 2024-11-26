@@ -34,3 +34,4 @@ localstack/volume
 !.vscode/launch.json
 !.vscode/extensions.json
 build
+.env
