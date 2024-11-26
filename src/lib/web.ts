@@ -10,7 +10,7 @@ export function startHttpServer(connectedClients: any) {
   const app = express();
   app.use(express.static(path.join(__dirname, '../../public')));
   app.get('/', (req, res) => {
-    res.sendFile('index.html');
+    res.sendFile(path.join(__dirname, '../../public/index.html'));
   });
 
   const server = http.createServer(function (req, res) {

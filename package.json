@@ -2,10 +2,9 @@
   "name": "tunnel",
   "version": "1.0.0",
   "description": "",
-  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon build/server.js",
+    "start": "nodemon dist/index.js",
     "dev": "ts-node-dev --respawn --exit-child --transpile-only src/index.ts",
     "build": "tsc"
   },
