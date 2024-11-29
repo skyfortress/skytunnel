@@ -48,11 +48,15 @@ jobs:
         with: 
           repository: skyfortress/infra
           token: ${{ secrets.GH_TOKEN }}
+      - name: Get SDK Version from config
+        id: lookupSdkVersion
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq eval -i '.images[] |= select(.name == "docker.io/skyfortress/skytunnel") |= .newTag = "${{ github.sha }}"' skytunnel/kustomization.yaml
       - name: Commit to Infra Repository
         run: |
           git config user.name github-actions
           git config user.email ci@skyfortress.dev
-          sed -i 's/newTag = "[^"]*"/newTag = "${{ github.sha }}"/' skytunnel/kustomization.yaml
           git add .
           git commit -m "build: automatic update of skytunnel"
           git push
