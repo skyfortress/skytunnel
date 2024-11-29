@@ -43,3 +43,16 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+      - name: Checkout Infra Repository
+        uses: actions/checkout@v3
+        with: 
+          repository: skyfortress/infra
+          token: ${{ secrets.GH_TOKEN }}
+      - name: Commit to Infra Repository
+        run: |
+          git config user.name github-actions
+          git config user.email ci@skyfortress.dev
+          sed -i 's/newTag = "[^"]*"/newTag = "${{ github.sha }}"/' terraform/terraform.tfvars
+          git add .
+          git commit -m "build: automatic update of skytunnel"
+          git push
