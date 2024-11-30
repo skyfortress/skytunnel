@@ -35,3 +35,4 @@ localstack/volume
 !.vscode/extensions.json
 build
 .env
+stats.json

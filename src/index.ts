@@ -1,6 +1,7 @@
 import 'dotenv/config';
 
-import { readFileSync } from 'node:fs';
+import { writeFile } from 'node:fs/promises';
+import { Server as TcpServer } from 'node:net';
 import { inspect } from 'node:util';
 
 import { Server } from 'ssh2';
@@ -9,7 +10,7 @@ import { generateDomainFromConnection } from './lib/domain';
 import { createTcpServer, getRandomPort } from './lib/tcp';
 import { startHttpServer } from './lib/web';
 
-const connectedClients = {};
+const connectedClients = {} as { [key: string]: { port: number; server: TcpServer } };
 
 startHttpServer(connectedClients);
 
@@ -19,7 +20,7 @@ new Server(
   },
   (client) => {
     console.log('Client connected!', (client as any)._sock._peername.address);
-
+    let domain;
     client
       .on('authentication', (ctx) => {
         ctx.accept();
@@ -28,7 +29,7 @@ new Server(
         console.log('Client authenticated!');
         let isForwarded = false;
 
-        client.on('request', (accept, reject, name, info) => {
+        client.on('request', async (accept, reject, name, info) => {
           console.log('Client wants to execute: ' + name, inspect(info));
           if (name === 'tcpip-forward') {
             accept();
@@ -37,7 +38,7 @@ new Server(
               const port = getRandomPort();
               const tcpHost = '127.0.0.1';
               const tcpServer = createTcpServer(client, info);
-              const domain = generateDomainFromConnection(client);
+              domain = generateDomainFromConnection(client);
 
               connectedClients[domain] = {
                 port,
@@ -46,6 +47,7 @@ new Server(
 
               tcpServer.listen(port, tcpHost);
               console.log(`TCP listening to: ${tcpHost}:${port}`);
+              await writeStatsFile();
             }
           }
         });
@@ -63,7 +65,9 @@ new Server(
           session.once('shell', (accept, reject, info) => {
             console.log('Client wants to allocate a shell', inspect(info));
             const session = accept();
-            session.write(`Your address is ${generateDomainFromConnection(client)}!\r\n`);
+            const msg = `Your address is https://${generateDomainFromConnection(client)}\r\n`;
+            console.log(msg);
+            session.write(msg);
 
             session.on('data', () => {
               session.end();
@@ -71,13 +75,33 @@ new Server(
           });
         });
       })
-      .on('error', (err) => {
+      .on('error', async (err) => {
+        if (err.message.includes('Handshake failed')) {
+          return;
+        }
+        delete connectedClients[domain];
+        await writeStatsFile();
         console.error(err);
       })
-      .on('close', () => {
+      .on('close', async () => {
         console.log('Client disconnected');
+        delete connectedClients[domain];
+        await writeStatsFile();
       });
   },
 ).listen(parseInt(process.env.SSH_SERVER_PORT), '0.0.0.0', function () {
   console.log('Listening on port ' + this.address().port);
 });
+
+async function writeStatsFile() {
+  await writeFile(
+    'stats.json',
+    JSON.stringify(
+      {
+        connectedClients: Object.keys(connectedClients),
+      },
+      null,
+      2,
+    ),
+  );
+}
