@@ -48,11 +48,13 @@ jobs:
         with: 
           repository: skyfortress/infra
           token: ${{ secrets.GH_TOKEN }}
+      - uses: benjlevesque/short-sha@v3.0
+        id: short-sha
       - name: Get SDK Version from config
         id: lookupSdkVersion
         uses: mikefarah/yq@master
         with:
-          cmd: yq eval -i '.images[] |= select(.name == "docker.io/skyfortress/skytunnel") |= .newTag = "${{ github.sha }}"' skytunnel/kustomization.yaml
+          cmd: yq eval -i '.images[] |= select(.name == "docker.io/skyfortress/skytunnel") |= .newTag = "sha-${{ steps.short-sha.outputs.sha }}"' skytunnel/kustomization.yaml
       - name: Commit to Infra Repository
         run: |
           git config user.name github-actions
