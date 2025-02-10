@@ -4,11 +4,9 @@ import { Connection } from 'ssh2';
 
 import { WORDS_LIST } from './misc/words';
 
-//TODO: check collisions?
-
-export function generateDomainFromConnection(connection: Connection) {
+export function generateDomainFromConnection(connection: Connection, preffered?: string) {
   const ip = (connection as any)._sock._peername.address;
-  const word = generateWordFromIP(ip);
+  const word = preffered ?? generateWordFromIP(ip);
   return `${word}.skytunnel.run`; // TODO: Use a proper domain
 }
 

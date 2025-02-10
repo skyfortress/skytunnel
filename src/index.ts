@@ -20,6 +20,10 @@ new Server(
   },
   (client) => {
     console.log('Client connected!', (client as any)._sock._peername.address);
+    let clientData: {
+      port: number;
+      server: TcpServer;
+    };
     let domain;
     client
       .on('authentication', (ctx) => {
@@ -38,16 +42,14 @@ new Server(
               const port = getRandomPort();
               const tcpHost = '127.0.0.1';
               const tcpServer = createTcpServer(client, info);
-              domain = generateDomainFromConnection(client);
 
-              connectedClients[domain] = {
+              clientData = {
                 port,
                 server: tcpServer,
               };
 
               tcpServer.listen(port, tcpHost);
               console.log(`TCP listening to: ${tcpHost}:${port}`);
-              await writeStatsFile();
             }
           }
         });
@@ -62,10 +64,26 @@ new Server(
             console.log('Client wants to allocate a pseudo-TTY', inspect(info));
             accept();
           });
-          session.once('shell', (accept, reject, info) => {
-            console.log('Client wants to allocate a shell', inspect(info));
+          session.on('env', (accept, reject, info: { key: string; val: string }) => {
+            if (info.key === 'LC_DOMAIN') {
+              domain = generateDomainFromConnection(client, info.val);
+            }
+          });
+          session.once('shell', async (accept, reject, info) => {
+            if (!domain) {
+              domain = generateDomainFromConnection(client);
+            }
             const session = accept();
-            const msg = `Your address is https://${generateDomainFromConnection(client)}\r\n`;
+
+            if (connectedClients[domain]) {
+              session.write(`https://${domain} is already in use.\r\n`);
+              session.end();
+              return;
+            }
+            connectedClients[domain] = clientData;
+
+            const msg = `Your address is https://${domain}\r\n`;
+            await writeStatsFile();
             console.log(msg);
             session.write(msg);
 

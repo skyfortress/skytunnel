@@ -9,6 +9,12 @@ ssh -R 443:localhost:8080 skytunnel.run
 ```
 Replace `8080` with your local port number.
 
+if you want to specify your own subdomain use the following command
+```bash
+LC_DOMAIN=yourdomain ssh -R 443:localhost:8080 skytunnel.run
+```
+Replace `yourdomain` with preferred name
+
 ## Features
 
 - **No Installation Required** - Just use SSH, which is already installed on most systems
