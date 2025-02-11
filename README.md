@@ -22,7 +22,8 @@ Replace `yourdomain` with preferred name
 - **Free Forever** - No hidden costs or premium features
 - **Zero-knowledge TLS** - Encrypted traffic through secure tunnels
 - **Secure WebSocket Support** - Compatible with WebSocket connections
-- **Deterministic Domain Names** - Get the same domain name every time (IP-dependent)
+- **Deterministic Domain Names** - Get the same domain name every time (based on pubkey)
+- **Birng your own subdomain** - Use custom subdomain via environment variables
 - **Open Source** - Contribute or self-host your own instance
 
 ## How It Works

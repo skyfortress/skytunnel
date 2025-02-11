@@ -6,7 +6,7 @@ import { inspect } from 'node:util';
 
 import { Server } from 'ssh2';
 
-import { generateDomainFromConnection } from './lib/domain';
+import { generateWordFromStr } from './lib/domain';
 import { createTcpServer, getRandomPort } from './lib/tcp';
 import { startHttpServer } from './lib/web';
 
@@ -18,21 +18,26 @@ new Server(
   {
     hostKeys: [process.env.SSH_HOST_KEY],
   },
-  (client) => {
-    console.log('Client connected!', (client as any)._sock._peername.address);
+  (client, info) => {
+    console.log('Client connected!', info);
     let clientData: {
       port: number;
       server: TcpServer;
     };
     let domain;
+    let key;
     client
       .on('authentication', (ctx) => {
-        ctx.accept();
+        if (ctx.method === 'publickey') {
+          key = ctx.key.data.toString('base64');
+          return ctx.accept();
+        }
+
+        return ctx.reject();
       })
       .on('ready', () => {
         console.log('Client authenticated!');
         let isForwarded = false;
-
         client.on('request', async (accept, reject, name, info) => {
           console.log('Client wants to execute: ' + name, inspect(info));
           if (name === 'tcpip-forward') {
@@ -61,25 +66,29 @@ new Server(
           }
           const session = accept();
           session.once('pty', (accept, reject, info) => {
-            console.log('Client wants to allocate a pseudo-TTY', inspect(info));
             accept();
           });
           session.on('env', (accept, reject, info: { key: string; val: string }) => {
             if (info.key === 'LC_DOMAIN') {
-              domain = generateDomainFromConnection(client, info.val);
+              domain = `${info.val}.skytunnel.run`;
             }
           });
           session.once('shell', async (accept, reject, info) => {
-            if (!domain) {
-              domain = generateDomainFromConnection(client);
-            }
             const session = accept();
-
-            if (connectedClients[domain]) {
+            if (domain && connectedClients[domain]) {
               session.write(`https://${domain} is already in use.\r\n`);
               session.end();
               return;
             }
+            if (!domain) {
+              domain = `${generateWordFromStr(key)}.skytunnel.run`;
+              if (connectedClients[domain]) {
+                // if user has already connected with this key, generate a new domain.
+                // Ideally we should use local port to generate domain but it's not possible with SSH.
+                domain = `${generateWordFromStr(Math.random().toString())}.skytunnel.run`;
+              }
+            }
+
             connectedClients[domain] = clientData;
 
             const msg = `Your address is https://${domain}\r\n`;
