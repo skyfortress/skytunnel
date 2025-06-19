@@ -1,17 +1,17 @@
-# Skytunnel.run
+# skytunnel.pp.ua
 ![Skytunnel Demo](public/video.gif)
 Expose local servers to the internet without installation, signup, and free forever. Skytunnel is an open-source alternative to ngrok and serveo.
 
 ## Quick Start
 
 ```bash
-ssh -R 443:localhost:8080 skytunnel.run
+ssh -R 443:localhost:8080 skytunnel.pp.ua
 ```
 Replace `8080` with your local port number.
 
 if you want to specify your own subdomain use the following command
 ```bash
-LC_DOMAIN=yourdomain ssh -R 443:localhost:8080 skytunnel.run
+LC_DOMAIN=yourdomain ssh -R 443:localhost:8080 skytunnel.pp.ua
 ```
 Replace `yourdomain` with preferred name
 

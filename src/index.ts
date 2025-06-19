@@ -70,7 +70,7 @@ new Server(
           });
           session.on('env', (accept, reject, info: { key: string; val: string }) => {
             if (info.key === 'LC_DOMAIN') {
-              domain = `${info.val}.skytunnel.run`;
+              domain = `${info.val}.skytunnel.pp.ua`;
             }
           });
           session.once('shell', async (accept, reject, info) => {
@@ -81,11 +81,11 @@ new Server(
               return;
             }
             if (!domain) {
-              domain = `${generateWordFromStr(key)}.skytunnel.run`;
+              domain = `${generateWordFromStr(key)}.skytunnel.pp.ua`;
               if (connectedClients[domain]) {
                 // if user has already connected with this key, generate a new domain.
                 // Ideally we should use local port to generate domain but it's not possible with SSH.
-                domain = `${generateWordFromStr(Math.random().toString())}.skytunnel.run`;
+                domain = `${generateWordFromStr(Math.random().toString())}.skytunnel.pp.ua`;
               }
             }
 

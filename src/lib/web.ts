@@ -14,7 +14,7 @@ export function startHttpServer(connectedClients: any) {
   });
 
   const server = http.createServer(function (req, res) {
-    if (['skytunnel.run', 'localhost'].includes(req.headers.host)) {
+    if (['skytunnel.pp.ua', 'localhost'].includes(req.headers.host)) {
       return app(req, res);
     }
     console.log('Request received', req.headers);
